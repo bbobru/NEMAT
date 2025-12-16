@@ -49,8 +49,11 @@ help:
 prep:
 	@rm -f logs/prep* logs/*prep.log
 	@echo ">>> Preparing input files for assembly system..."
-	@$(PYTHON) $(SRC)/NEMAT/file_gestor.py --step check --NMT_HOME $(NMT_HOME)
+# 	@$(PYTHON) $(SRC)/NEMAT/file_gestor.py --step check --NMT_HOME $(NMT_HOME)
+# 	@echo "all good"
 	@sbatch $(SRC)/NEMAT/run_files/prep.sh
+# 	@echo "all gooder"
+
 
 # Check if there are any errors in the log
 check_prep:

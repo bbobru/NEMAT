@@ -365,7 +365,10 @@ def main(prot_list, nmt_home, lig_files=None, input_dir='input'):
     if 'protein' in nmt.thermCycleBranches:
         ppath = f"{os.getcwd()}/proteins"
         for prot in prot_list:
-            inp.protein_files.extend([f"{ppath}/{prot}/system.top", f"{ppath}/{prot}/system.gro", f"{ppath}/{prot}/toppar"]) # List of protein files 
+            inp.protein_files.extend([f"{ppath}/{prot}/system.gro"]) # List of protein files 
+            if nmt.calculationType != "mut protein in water": # BERTA: if the calculationType is protein mutation, don't assume toppar and topology are pregen
+                inp.protein_files.extend([f"{ppath}/{prot}/system.top", f"{ppath}/{prot}/toppar"])
+    
     if 'membrane' in nmt.thermCycleBranches:
         mpath = f"{os.getcwd()}/membrane" # path to the membrane
         inp.membrane_files = [f"{mpath}/membrane.gro", f"{mpath}/membrane.top", f"{mpath}/toppar"] # List of membrane files (.gro)
@@ -377,7 +380,7 @@ def main(prot_list, nmt_home, lig_files=None, input_dir='input'):
     
     if 'protein' in nmt.thermCycleBranches:
         inp.genProteinInputs()
-    if 'membrane' in nmt.thermCycleBranches:
+    if 'membrane' in nmt.thermCycleBranches: #TODO: make it to go with calculationType
         inp.genMembraneInputs()
 
     if nmt.temp != 298:
@@ -391,9 +394,16 @@ if __name__ == "__main__":
     nmt = read_input()
     edges = []
     args = args_parser()
-    for edge in nmt.edges:
-        edges.append(nmt.edges[edge])
-    lig_files = [f'{i}.mol2' for i in np.unique(edges)]
+    print("HOLAAAA")
+    print(f"{nmt.calculationType}")
+    print(f"{nmt.mutProtLigand}")
+    if nmt.calculationType == "mut protein in water":
+        lig_files = [f'{nmt.mutProtLigand}.mol2']
+    else:
+        for edge in nmt.edges:
+            edges.append(nmt.edges[edge])
+        lig_files = [f'{i}.mol2' for i in np.unique(edges)]
+
     main(prot_list=[nmt.proteinName], input_dir=nmt.inputDirName, lig_files=lig_files, nmt_home=args.NMT_HOME)
 
 

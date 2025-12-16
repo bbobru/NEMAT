@@ -58,13 +58,14 @@ class NEMAT:
         self._replicas = None        
         self.simTypes = ['em', 'eq', 'md', 'transitions']
         self.states = ['stateA', 'stateB']
+        self._calculationType = "mut ligand in membrane" # can also be "mut protein in water" or "mut ligand in water"
+        self._mutProtLigand = None
         self._thermCycleBranches = ['water','membrane','protein']
         self.frameNum = 80 # Number of frames to extract to make transitions
         self.framesAnalysis = []
         self.spacedFrames = False # if True, frames are evenly spaced. If False, all frames in frame analysis are selected
         self.nframesAnalysis = None # Number of frames to use in the analysis (max frameNum, which is the number of transitions).  
         self._tstart = None  # time (in ns) to start extracting frames from the md trajectory to be the starting point of transitions.
-
 
         self.color_f = "#008080" # color for forward work plot
         self.color_b = "#ff8559" # color for backward work plot
@@ -123,7 +124,6 @@ class NEMAT:
 
         self._inputDirName = f'{cwd}/{dir}'
 
-
     @property
     def tstart(self):
         return self._tstart
@@ -151,6 +151,31 @@ class NEMAT:
             self._thermCycleBranches = branches
         else:
             self._thermCycleBranches = ['water','membrane','protein']
+
+    @property
+    def calculationType(self):
+        return self._calculationType
+    
+    @calculationType.setter
+    def calculationType(self, calculationType):
+        if calculationType is not None:
+            if calculationType not in ["mut ligand in membrane","mut ligand in water","mut protein in water"]:
+                raise ValueError("calculation Type must be one of the following: [mut ligand in membrane,mut ligand in water,mut protein in water]")
+            
+            self._calculationType = calculationType
+        else:
+            self._calculationType = "mut ligand in membrane"
+
+    @property
+    def mutProtLigand(self):
+        return self._mutProtLigand
+    
+    @mutProtLigand.setter
+    def mutProtLigand(self,mutProtLigand):
+        if (mutProtLigand is None) and (self.calculationType is "mut protein in water"):
+            raise ValueError("To mutate a protein in RBFE calculations there must be a ligand")
+        self._mutProtLigand = mutProtLigand
+
 
     @property
     def workPath(self):
