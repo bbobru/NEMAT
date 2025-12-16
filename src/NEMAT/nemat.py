@@ -4,6 +4,7 @@ from pmx.utils import create_folder
 from pmx import gmx
 import pmx.jobscript
 import pmx.ligand_alchemy
+from pmx.alchemy import mutate, gen_hybrid_top
 import os,shutil
 import subprocess
 import glob
@@ -818,7 +819,23 @@ class NEMAT:
                 # tpr = '{0}/em.tpr'.format(outMembPath)
                 # gmx.grompp(f=f"{mdpath}/memb_em_l0.mdp", c=f"{outMembPath}/membrane.gro", p=f"{membOutTop}", o=f"{tpr}", maxwarn=1) #create the tpr for minimization. the warinig is sc-alpha != 0
 
+    def mutate_protein(self): #TODO
+        # BERTA
+        # mutate proteins in the correct folder
+        # generate hybrid topology
+        # add lambdas
 
+        # https://degrootlab.github.io/pmx/api/modules.html#module-pmx.alchemy
+
+
+        pass
+    
+    def assemble_systems_protein_mutation(self): #TODO:
+        # BERTA
+        # add ligand to prot+lig geom
+        # add ligand to prot+lig topology
+        # put files in correct place
+        pass
 
 
     def create_prot_top(self, fname, lig_itps, mols, topol, sys_name):
