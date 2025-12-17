@@ -353,7 +353,7 @@ class NEMAT:
             lpath = '{0}/{1}'.format(self.ligandPath,lname)
             self.ligands[lnameTrunc] = os.path.abspath(lpath)
  
-    def _read_protein( self ):
+    def _read_protein( self ): #TODO: make this with abspath?? Make it more useful??
         """
         Updates .protein property to dict
         """
@@ -377,7 +377,7 @@ class NEMAT:
                     #     self.protein['mols'].append(fname[6:-4])
                     # else:
                     #     self.protein['mols'].append(fname[:-4])                        
-            if '.pdb' in fname:
+            if ('.pdb' in fname) or ('.gro' in fname):
                 self.protein['str'] = fname
         self.protein['mols'].sort()
 
@@ -412,7 +412,12 @@ class NEMAT:
         except: 
             foo = {}
             for e in self.edges:
-                key = 'edge_{0}_{1}'.format(e[0],e[1])
+                # BERTA: check that, for ligand mutations, length of edge is 2
+
+                if "mut ligand" in self.calculationType:
+                    assert len(e)==2, "For ligand mutations, only 2 ligands can be passed to edge. Please revise the edges and calculationType."
+
+                key = f'edge_{"_".join(e)}'
                 foo[key] = e
             self.edges = foo
             
@@ -819,16 +824,46 @@ class NEMAT:
                 # tpr = '{0}/em.tpr'.format(outMembPath)
                 # gmx.grompp(f=f"{mdpath}/memb_em_l0.mdp", c=f"{outMembPath}/membrane.gro", p=f"{membOutTop}", o=f"{tpr}", maxwarn=1) #create the tpr for minimization. the warinig is sc-alpha != 0
 
+    def get_mutations_from_edge(self,edge):
+        mutations = self.edges[edge]
+        print(f"Found {len(mutations)} for {edge}")
+        
+        separated_mutations = [ [mut[0],int(mut[1:-1]),mut[-1]] for mut in mutations]
+        return separated_mutations
+
+
     def mutate_protein(self): #TODO
         # BERTA
-        # mutate proteins in the correct folder
+        
         # generate hybrid topology
         # add lambdas
-
         # https://degrootlab.github.io/pmx/api/modules.html#module-pmx.alchemy
+        
+        # mutate proteins in the hybridStrTop folder
+        print("----- Mutating protein -----")
+        print("aaaa", self.protein)
+        
 
+        for edge in self.edges:
+            print(edge)
+            hybridStrTopPath = self._get_specific_path(edge=edge,bHybridStrTop=True)
+            protein = pmx.model.Model(os.path.join(self.protein["path"],self.protein["str"]))
+            
+            mutations = self.get_mutations_from_edge(edge) # retrieve mutations from the edge
+            
+            print(mutations)
+            for pack in mutations:
+                wt_res, res_num, new_res = pack
+                # TODO: check wt_res is correct
+                # TODO: FORCEFIELD
+                mutate(m=protein,mut_resid=res_num, mut_resname=new_res, ff='amber14sbmut',inplace=True) #recursive mutations on protein
 
-        pass
+            # Save mutated protein
+            protein.write(f"{hybridStrTopPath}/sys_mut.gro")
+
+                
+            
+
     
     def assemble_systems_protein_mutation(self): #TODO:
         # BERTA

@@ -480,7 +480,9 @@ def assemble_system(nmt_home):
         nmt.assemble_systems( )
     
     elif "mut protein" in nmt.calculationType:
-        pass
+        nmt.mutate_protein()
+        # nmt.assemble_systems_protein_mutation()
+        # pass
         # mutate protein acording to edges and generate topologies
         # add ligand params to each "protein" edge
 
@@ -707,7 +709,7 @@ if __name__ == '__main__':
     if args.step == 'prep':
         print("Assembling system...")
         assemble_system(args.NMT_HOME)
-        prepare_ligands()
+        # prepare_ligands()
         print("Tracking errors...")
         track_errors('logs/prep.err')
     
