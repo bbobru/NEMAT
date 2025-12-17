@@ -833,6 +833,28 @@ class NEMAT:
         return separated_mutations
 
 
+    def abspath_itp_protein_mutation(self, edge, itp):
+        """
+        Transforms all the #includes that are not forcefields into absolute paths
+        """
+        hybridStrTopPath = self._get_specific_path(edge=edge,bHybridStrTop=True)
+        filename = os.path.basename(itp)
+        with open(itp,"r") as ff:
+            lines = ff.readlines()
+        
+        for ii,line in enumerate(lines):
+            if ('#include' in line) and (not ".ff" in line):
+                _,file,_ = line.split('"')
+                abspath = os.path.join(hybridStrTopPath, file)
+                print(abspath)
+                new_line = line.replace(file, abspath)
+                lines[ii] = new_line
+        
+        with open(f"{hybridStrTopPath}/{filename}","w") as ff:
+            ff.writelines(lines)
+        return
+
+
     def mutate_protein(self): #TODO
         # BERTA
         
@@ -862,27 +884,42 @@ class NEMAT:
 
             # generate Topology
             # TODO: forcefield and water models
-            gmx.pdb2gmx(f"{hybridStrTopPath}/sys_mut.gro", o=f"{hybridStrTopPath}/system.gro",
+            gmx.pdb2gmx(f"{hybridStrTopPath}/sys_mut.gro", o=f"{hybridStrTopPath}/dum.gro",
                           p=f"{hybridStrTopPath}/topol.top", ff="amber14sbmut", water="tip3p")
             
             # Generate hybrid topology (add parameters to control state with lambda)
             top = Topology(f"{hybridStrTopPath}/topol.top",ff="amber14sbmut")
             pmxtop, pmxitps = gen_hybrid_top(topol=top, recursive=True) # fill B states for hybrid residues present in topology
 
-            # Write topology and itps to a new file
+            # Write topology and itps to a new file. Ensure absolute paths of itps
             pmxtop.write(f"{hybridStrTopPath}/hybriTop.top")
-            for itp in pmxitps:
-                itp.write(itp.filename)
-                        
+            self.abspath_itp_protein_mutation(edge,f"{hybridStrTopPath}/hybriTop.top" )
 
-    
+            for itp in pmxitps:
+                print(itp.filename)
+                itp.write(itp.filename)
+                self.abspath_itp_protein_mutation(edge,itp.filename)
+
+            # Move posres in base dir to hybridTopol dir
+            posres = [file for file in os.listdir(".") if ("posre" in file) and (".itp" in file) ]
+            for pp in posres:
+                os.rename(pp, f"{hybridStrTopPath}/{pp}")
+
+            # clean backup files
+            self._clean_backup_files(hybridStrTopPath)
+
+
     def assemble_systems_protein_mutation(self): #TODO:
         # BERTA
-        # Change topology to have absolute path of itps
+        for edge in self.edges:
+            hybridStrTopPath = self._get_specific_path(edge=edge,bHybridStrTop=True)
+
+
+
+
         # add ligand to prot+lig geom
         # add ligand to prot+lig topology
         # put files in correct place
-        pass
 
 
     def create_prot_top(self, fname, lig_itps, mols, topol, sys_name):

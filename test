@@ -1,0 +1,10 @@
+#include "amber14sbmut.ff/forcefield.itp"
+
+#include "topol_Protein.itp"
+#include "topol_Ion2.itp"
+#include "/data/ucsqab/bbori/.conda/envs/NEMAT/lib/python3.7/site-packages/pmx/data/mutff/amber14sbmut.ff/tip3p.itp"
+
+
+
+
+#ifdef POSRES_WATER
