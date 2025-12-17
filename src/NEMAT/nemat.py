@@ -5,6 +5,7 @@ from pmx import gmx
 import pmx.jobscript
 import pmx.ligand_alchemy
 from pmx.alchemy import mutate, gen_hybrid_top
+from pmx.forcefield import Topology
 import os,shutil
 import subprocess
 import glob
@@ -835,11 +836,9 @@ class NEMAT:
     def mutate_protein(self): #TODO
         # BERTA
         
-        # generate hybrid topology
-        # add lambdas
         # https://degrootlab.github.io/pmx/api/modules.html#module-pmx.alchemy
         
-        # mutate proteins in the hybridStrTop folder
+        # Mutate proteins in the hybridStrTop folder
         print("----- Mutating protein -----")
         print("aaaa", self.protein)
         
@@ -856,17 +855,30 @@ class NEMAT:
                 wt_res, res_num, new_res = pack
                 # TODO: check wt_res is correct
                 # TODO: FORCEFIELD
-                mutate(m=protein,mut_resid=res_num, mut_resname=new_res, ff='amber14sbmut',inplace=True) #recursive mutations on protein
+                mutate(m=protein,mut_resid=res_num, mut_resname=new_res, ff="amber14sbmut",inplace=True) #recursive mutations on protein
 
             # Save mutated protein
             protein.write(f"{hybridStrTopPath}/sys_mut.gro")
 
-                
+            # generate Topology
+            # TODO: forcefield and water models
+            gmx.pdb2gmx(f"{hybridStrTopPath}/sys_mut.gro", o=f"{hybridStrTopPath}/system.gro",
+                          p=f"{hybridStrTopPath}/topol.top", ff="amber14sbmut", water="tip3p")
             
+            # Generate hybrid topology (add parameters to control state with lambda)
+            top = Topology(f"{hybridStrTopPath}/topol.top",ff="amber14sbmut")
+            pmxtop, pmxitps = gen_hybrid_top(topol=top, recursive=True) # fill B states for hybrid residues present in topology
+
+            # Write topology and itps to a new file
+            pmxtop.write(f"{hybridStrTopPath}/hybriTop.top")
+            for itp in pmxitps:
+                itp.write(itp.filename)
+                        
 
     
     def assemble_systems_protein_mutation(self): #TODO:
         # BERTA
+        # Change topology to have absolute path of itps
         # add ligand to prot+lig geom
         # add ligand to prot+lig topology
         # put files in correct place
