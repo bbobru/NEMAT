@@ -911,13 +911,45 @@ class NEMAT:
 
     def assemble_systems_protein_mutation(self): #TODO:
         # BERTA
+        # Add ligand to prot+lig geom
+
+        # editconf on ligand to get .gro
+        ligPath = os.path.join(self.ligandPath,self.mutProtLigand)
+        gmx.pdb2gmx(f"{ligPath}/ligGeom.pdb", o=f"{ligPath}/ligGeom.gro")
+        
+        with open(f"{ligPath}/ligGeom.gro","r") as ff:
+            ligLines = ff.readlines()
+        
+        ligGeom = ligLines[2:-1] # remove headers and box
+        ligAtomNumber = int(ligLines[1]) # number of atoms in ligand
+
+        # Load protein lines
         for edge in self.edges:
             hybridStrTopPath = self._get_specific_path(edge=edge,bHybridStrTop=True)
 
+            with open(f"{hybridStrTopPath}/sys_mut.gro","r") as ff:
+                protLines = ff.readlines()
+            
+            protAtomNumber = int(protLines[1]) # number of atoms in protein
+
+            # Add ligand befor box line
+            new_lines = protLines[:-1] + ligGeom + protLines[-1:]
+
+            # Update atom number 
+            new_number = protAtomNumber + ligAtomNumber
+            new_lines[1] = new_lines[1].replace(str(protAtomNumber),str(new_number))
+
+            # Rewrite file in workpath/protein folder
+            proteinPath = self._get_specific_path(edge,wp="protein")
+            with open(f"{proteinPath}/system.gro","w") as ff:
+                ff.writelines(new_lines)
 
 
 
-        # add ligand to prot+lig geom
+
+
+
+        
         # add ligand to prot+lig topology
         # put files in correct place
 
