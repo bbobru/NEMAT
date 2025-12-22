@@ -11,5 +11,5 @@
 
 module load gromacs-plumed/2024.2-2.9.2
 
-# python $NMT_HOME/src/NEMAT/prepare_inputs_md.py --NMT_HOME $NMT_HOME
+python $NMT_HOME/src/NEMAT/prepare_inputs_md.py --NMT_HOME $NMT_HOME
 python $NMT_HOME/src/NEMAT/file_gestor.py --step prep --NMT_HOME $NMT_HOME

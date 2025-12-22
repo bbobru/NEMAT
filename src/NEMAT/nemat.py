@@ -911,11 +911,12 @@ class NEMAT:
 
     def assemble_systems_protein_mutation(self): #TODO:
         # BERTA
-        # Add ligand to prot+lig geom
+        # 1. Add ligand to prot+lig geom
 
         # editconf on ligand to get .gro
         ligPath = os.path.join(self.ligandPath,self.mutProtLigand)
-        gmx.pdb2gmx(f"{ligPath}/ligGeom.pdb", o=f"{ligPath}/ligGeom.gro")
+        subprocess.run(f"gmx_mpi editconf -f {ligPath}/ligGeom.pdb -o {ligPath}/ligGeom.gro",shell=True)
+        # gmx.editconf(f"{ligPath}/ligGeom.pdb", o=f"{ligPath}/ligGeom.gro",other_flags="-translate (0 0 0)")
         
         with open(f"{ligPath}/ligGeom.gro","r") as ff:
             ligLines = ff.readlines()
@@ -923,7 +924,7 @@ class NEMAT:
         ligGeom = ligLines[2:-1] # remove headers and box
         ligAtomNumber = int(ligLines[1]) # number of atoms in ligand
 
-        # Load protein lines
+        ## Load protein lines
         for edge in self.edges:
             hybridStrTopPath = self._get_specific_path(edge=edge,bHybridStrTop=True)
 
@@ -932,26 +933,42 @@ class NEMAT:
             
             protAtomNumber = int(protLines[1]) # number of atoms in protein
 
-            # Add ligand befor box line
+            ## Add ligand befor box line
             new_lines = protLines[:-1] + ligGeom + protLines[-1:]
 
-            # Update atom number 
+            ## Update atom number 
             new_number = protAtomNumber + ligAtomNumber
             new_lines[1] = new_lines[1].replace(str(protAtomNumber),str(new_number))
 
-            # Rewrite file in workpath/protein folder
+            ## Rewrite file in workpath/protein folder
             proteinPath = self._get_specific_path(edge,wp="protein")
             with open(f"{proteinPath}/system.gro","w") as ff:
                 ff.writelines(new_lines)
 
 
+            # 2. Add ligand to prot+lig topology
+            with open(f"{hybridStrTopPath}/hybriTop.top","r") as ff:
+                topLines = ff.readlines()
+
+            ## Add ligand itps befor [ system ] is declared
+            sys_pos =  topLines.index("[ system ]\n")
+            topLines.insert(sys_pos,f"#insert {ligPath}/ligTopol.itp\n")
+            topLines.insert(sys_pos,f"#insert {ligPath}/ligAtomTypes.itp\n") 
+
+            ## Add MOL 1 at the end of the file
+            topLines += ["MOL   1"]
+
+            ## Write the file
+            with open(f"{proteinPath}/topol.top","w") as ff:
+                ff.writelines(topLines)
 
 
+            # 3. Put protein geometry and topology in the water folder
+            waterPath = self._get_specific_path(edge,wp="water")
 
+            shutil.copyfile(f"{hybridStrTopPath}/sys_mut.gro",f"{waterPath}/system.gro")
+            shutil.copyfile(f"{hybridStrTopPath}/hybriTop.top",f"{waterPath}/topol.top")
 
-        
-        # add ligand to prot+lig topology
-        # put files in correct place
 
 
     def create_prot_top(self, fname, lig_itps, mols, topol, sys_name):

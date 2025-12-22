@@ -482,9 +482,6 @@ def assemble_system(nmt_home):
     elif "mut protein" in nmt.calculationType:
         nmt.mutate_protein()
         nmt.assemble_systems_protein_mutation()
-        # pass
-        # mutate protein acording to edges and generate topologies
-        # add ligand params to each "protein" edge
 
 def prepare_ligands():
     
