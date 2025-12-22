@@ -896,20 +896,23 @@ class NEMAT:
             self.abspath_itp_protein_mutation(edge,f"{hybridStrTopPath}/hybriTop.top" )
 
             for itp in pmxitps:
-                print(itp.filename)
+                print("itp:",itp.filename)
                 itp.write(itp.filename)
                 self.abspath_itp_protein_mutation(edge,itp.filename)
 
             # Move posres in base dir to hybridTopol dir
             posres = [file for file in os.listdir(".") if ("posre" in file) and (".itp" in file) ]
             for pp in posres:
+            #     # pp_top = Topology(pp,ff="amber14sbmut")
+            #     # new_posre,_ = gen_hybrid_top(topol=pp_top, recursive=False)
+            #     # new_posre.write(f"{hybridStrTopPath}/{pp}")
                 os.rename(pp, f"{hybridStrTopPath}/{pp}")
 
             # clean backup files
             self._clean_backup_files(hybridStrTopPath)
 
 
-    def assemble_systems_protein_mutation(self): #TODO:
+    def assemble_systems_protein_mutation(self): 
         # BERTA
         # 1. Add ligand to prot+lig geom
 
@@ -950,13 +953,18 @@ class NEMAT:
             with open(f"{hybridStrTopPath}/hybriTop.top","r") as ff:
                 topLines = ff.readlines()
 
-            ## Add ligand itps befor [ system ] is declared
+            ## Add ligand atomtypes after forcefield
+            ff_line = [ii for ii in topLines if "forcefield.itp" in ii][0]
+            print(ff_line)
+            ff_pos  = topLines.index(ff_line)
+            topLines.insert(ff_pos+1, f'#include "{ligPath}/ligAtomTypes.itp"\n')
+
+            ## Add ligand itp before [ system ] is declared
             sys_pos =  topLines.index("[ system ]\n")
-            topLines.insert(sys_pos,f"#insert {ligPath}/ligTopol.itp\n")
-            topLines.insert(sys_pos,f"#insert {ligPath}/ligAtomTypes.itp\n") 
+            topLines.insert(sys_pos,f'#include "{ligPath}/ligTopol.itp"\n')
 
             ## Add MOL 1 at the end of the file
-            topLines += ["MOL   1"]
+            topLines += ["MOL 1"]
 
             ## Write the file
             with open(f"{proteinPath}/topol.top","w") as ff:
@@ -968,6 +976,23 @@ class NEMAT:
 
             shutil.copyfile(f"{hybridStrTopPath}/sys_mut.gro",f"{waterPath}/system.gro")
             shutil.copyfile(f"{hybridStrTopPath}/hybriTop.top",f"{waterPath}/topol.top")
+
+            # 4. Fix order of topology
+            for path in [proteinPath, waterPath]:
+                with open(f"{path}/topol.top","r") as ff:
+                    topLines = ff.readlines()
+                
+                sol_line = [ii for ii in topLines if "SOL " in ii][0]
+                ion_line = [ii for ii in topLines if "Ion2 " in ii][0]
+
+                sol_pos = topLines.index(sol_line)
+                ion_pos = topLines.index(ion_line)
+
+                if ion_pos < sol_pos:
+                    topLines[ion_pos], topLines[sol_pos] = sol_line, ion_line
+                
+                with open(f"{path}/topol.top","w") as ff:
+                    ff.writelines(topLines)
 
 
 
@@ -1322,6 +1347,9 @@ class NEMAT:
         if simType=='em':
             inStr = '{0}/ions.pdb'.format(toppath)
             maxwarn=1
+            if not os.path.exists(inStr):
+                inStr = '{0}/system.gro'.format(toppath)
+                maxwarn=2
         elif simType=='eq':
             inStr = '{0}/confout.gro'.format(empath)
             maxwarn=1
