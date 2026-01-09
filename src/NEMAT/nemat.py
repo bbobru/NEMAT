@@ -1161,7 +1161,11 @@ class NEMAT:
                 mdp = f'{self.mdpPath}/prot_eq1_l0.mdp'
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
-                maxwarn=1
+                # maxwarn=1
+                if self.calculationType == 'mut protein in water':
+                    maxwarn=2
+                else: 
+                    maxwarn=1
                             
             else:
                 mdp = f'{self.mdpPath}/prot_{mdpPrefix}_l0.mdp'
@@ -1185,7 +1189,12 @@ class NEMAT:
                 mdp = f'{self.mdpPath}/prot_eq1_l1.mdp'
                 tpr = f'{simpath}/{mdpPrefix}1.tpr'
                 ingro = f'{empath}/em.gro'
-                maxwarn=1
+                if self.calculationType == 'mut protein in water':
+                    maxwarn=2
+
+                else: 
+                    maxwarn=1
+
                 
             else:
                 mdp = f'{self.mdpPath}/prot_{mdpPrefix}_l1.mdp'
@@ -1205,6 +1214,7 @@ class NEMAT:
 
 
         self.n_lipid_groups = find_lipids(ingro)
+        print(self.n_lipid_groups)
 
         mem = ''
         solv = ''
@@ -1218,10 +1228,12 @@ class NEMAT:
         lig = 13 + self.n_lipid_groups + 3
 
         if self.n_lipid_groups != 0:
+            print("SI LIPID")
             index = f"printf '1 | {lig}\n name {lig+1} SOLU\n{mem}\n name {lig+2} MEMB\n{solv}\n name {lig+3} SOLV\n {lig+1} | {lig+2}\n name {lig+4} SOLU_MEMB\n q\n' | gmx make_ndx -f {ingro} -o {simpath}/index.ndx"
             subprocess.run(index, shell=True)
             gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=1, other_flags=f' -n {simpath}/index.ndx') # warning of sc-alpha != 0
         else:
+            print("NO LIPID")
             gmx.grompp(f=mdp, c=ingro, p=top, o=tpr, maxwarn=maxwarn) # warning of sc-alpha != 0
 
         self._clean_backup_files( simpath )

@@ -35,6 +35,12 @@ def find_lipids(gro):
     # for r in nonprotein:
     #     print("  -", r)
 
+
+    # BERTA: protein mutations add residues that are not in the list. Protein mutations contain a 2 (eg: P2S)
+    nonprotein = list(r for r in nonprotein if "2" not in r)
+
+    # print(nonprotein)
+
     return len(nonprotein)-4 # subtract 4 for SOL, ION+, ION-, LIG
 
 
